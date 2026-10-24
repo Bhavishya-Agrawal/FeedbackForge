@@ -3,10 +3,11 @@ import { env } from './env.js'
 import { Workspace } from '../models/Workspace.js'
 
 let transactionsSupported = false
+let connectionPromise
 
 export const supportsTransactions = () => transactionsSupported
 
-export async function connectDB() {
+async function connectAndInitialize() {
   await mongoose.connect(env.mongodbUri)
 
   const collections = await mongoose.connection.db
@@ -28,4 +29,14 @@ export async function connectDB() {
         'Use MongoDB Atlas or a local replica set for atomic behaviour.'
     )
   }
+}
+
+export async function connectDB() {
+  if (!connectionPromise) {
+    connectionPromise = connectAndInitialize().catch((err) => {
+      connectionPromise = undefined
+      throw err
+    })
+  }
+  await connectionPromise
 }
